@@ -4,9 +4,9 @@ Twin State and message handling between Raspberry PI PICO and host.
 Itention is to allow Raspberry PICO to act as IOT device and sync it's state 
 with a digital twin. PICO code is C, and host twin is in Python.
 
-#Dependencies
+# Dependencies
 
-#C Dependencies
+## C Dependencies
 
 Communication is all in JSON format and use JSON libraries from rafagafe.
 
@@ -15,11 +15,11 @@ Communication is all in JSON format and use JSON libraries from rafagafe.
 +[tiny-json](https://github.com/rafagafe/tiny-json)
 
 
-#Python Dependencies
+## Python Dependencies
 
 Standard Python3
 
-#Design 
+# Design 
 The real device, Raspberry PICO, holds a state (Class **State**) item which is updated with the 
 state of sensors or state desired for switches, etc. This state is then mirrored
 accross to it's twin on the host. Changes can be initiated from the thing or 
@@ -42,7 +42,7 @@ in both directions and causes the other side to return "pong" message. Data payl
 for all these messages is ignored.
 
 
-#Thing (PICO) Design
+## Thing (PICO) Design
 The thing state design is fairly simple as I was trying to be careful with limited
 resources on a Raspberry  PICO microcontroller. It only holds the current state.
 It does keep an eye on when it last heard from the host and initiate a ping if
@@ -55,7 +55,7 @@ any update requested by the digital twin. It holds a **trn** transaction identit
 which it must update and return, this allows the digital twin to understand what
 has and has not been updated.
 
-#Digital Twin (host) Design
+## Digital Twin (host) Design
 The digital twin design is more complex as it is not fully master of the state 
 of the thing. It borrows from AWS IOT framework in concept of having a *desired*
 , *reported* and *declined* state (see **Twin.py**). There is also metadata on 
@@ -70,7 +70,7 @@ not processed by the thing is added to the *declined* state.
 The python is not package format and I've been updating the *PYTHONPATH* to 
 pick up the modules.
 
-#Example
+# Example
 An example project using the library is ...
 
 
