@@ -21,6 +21,9 @@
 #include "Topic.h"
 #include "TopicGet.h"
 #include "TopicPing.h"
+#include "TopicStats.h"
+
+#define STATLEN 10
 
 
 
@@ -137,6 +140,12 @@ public:
 	  */
 	 unsigned int lastPingms();
 
+	 /***
+	  * Return json string of stats
+	  * @return
+	  */
+	  char * getStats();
+
 protected:
 
 	/***
@@ -150,8 +159,24 @@ protected:
 	 */
 	void touch();
 
+	/***
+	 * Add statistic for protocol error
+	 */
+	void statError();
+
+	/***
+	 * Add statistic for good protocol msg
+	 */
+	void statOK();
+
+	unsigned int statTimeMin = 0;
+	unsigned int statIndex = 0;
+	unsigned int statErrorsPerMin[STATLEN];
+	unsigned int statMSGPerMin[STATLEN];
+
 	//Time of last comms with host
 	unsigned int touchTime = 0;
+
 
 
 	//Buffer structures for json string processing
@@ -177,6 +202,7 @@ protected:
 	//Default protocol topic handers
 	TopicGet get;
 	TopicPing ping;
+	TopicStats stats;
 
 
 	//ping timeout

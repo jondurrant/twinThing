@@ -100,6 +100,13 @@ public:
 	 virtual unsigned int lastPingms() =0;
 
 
+	 /***
+	  * Return json string of stats
+	  * @return
+	  */
+	  virtual char * getStats() = 0;
+
+
 };
 
 #endif /* TWINABSTRACT_H_ */

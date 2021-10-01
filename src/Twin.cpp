@@ -45,6 +45,12 @@ Twin::Twin(State *stateObj, char *readBuffer,
 	addTopic("get", &get);
 	addTopic("ping", &ping);
 	addTopic("pong", &ping);
+	addTopic("stats", &stats);
+
+	for (unsigned int i =0 ; i < STATLEN; i++){
+		statErrorsPerMin[i] = 0;
+		statMSGPerMin[i] = 0;
+	}
 }
 
 Twin::~Twin() {
@@ -59,6 +65,7 @@ void Twin::processJson(char *str){
 	json_t const* json = json_create( str, jsonBuf, jsonBufLen );
 	if ( !json ) {
 		errorNotify("ERROR json create.","Twin::processJson");
+		statError();
 		return;
 	}
 
@@ -72,13 +79,16 @@ void Twin::processJson(char *str){
 		state->updateFromJson(delta);
 		state->commitTransaction();
 		touch();
+		statOK();
 	} else {
 		delta = json_getProperty(json, TWINTOPIC);
 		if (delta){
 			handleMsg(json);
 			touch();
+			statOK();
 		} else {
 			errorNotify("ERROR state/delta/topic not in JSON.", "Twin::processJson");
+			statError();
 		}
 	}
 
@@ -250,4 +260,68 @@ void Twin::pingHost(){
 */
 unsigned int Twin::lastPingms(){
 	return lastPing;
+}
+
+
+/***
+ * Add statistic for protocol error
+ */
+void Twin::statError(){
+	unsigned int min = to_ms_since_boot(get_absolute_time ()) / 60000;
+	if (min != statTimeMin){
+		statTimeMin = min;
+		statIndex++;
+		if (statIndex >= STATLEN){
+			statIndex = 0;
+		}
+		statErrorsPerMin[statIndex] = 0;
+		statMSGPerMin[statIndex] = 0;
+	}
+	statErrorsPerMin[statIndex]++;
+}
+
+/***
+ * Add statistic for good protocol msg
+ */
+void Twin::statOK(){
+	unsigned int min = to_ms_since_boot(get_absolute_time ()) / 60000;
+	if (min != statTimeMin){
+		statTimeMin = min;
+		statIndex++;
+		if (statIndex >= STATLEN){
+			statIndex = 0;
+		}
+		statErrorsPerMin[statIndex] = 0;
+		statMSGPerMin[statIndex] = 0;
+	}
+	statMSGPerMin[statIndex]++;
+}
+
+/***
+ * Return json string of stats
+ * @return
+ */
+char * Twin::getStats(){
+	int i;
+	char *p = msgBuf;
+
+	p = json_objOpen( p, NULL );
+	p = json_arrOpen( p, "error");
+	for (i = statIndex; i >= 0 ; i--){
+		p = json_uint( p, NULL, statErrorsPerMin[i] );
+	}
+	for (i = STATLEN-1; i > statIndex; i--){
+		p = json_uint( p, NULL, statErrorsPerMin[i] );
+	}
+	p = json_arrClose( p);
+	p = json_arrOpen( p, "msg");
+	for (i = statIndex; i >= 0 ; i--){
+		p = json_uint( p, NULL, statMSGPerMin[i] );
+	}
+	for (i = STATLEN-1; i > statIndex; i--){
+		p = json_uint( p, NULL, statMSGPerMin[i] );
+	}
+	p = json_arrClose( p);
+	p = json_objClose( p );
+	return msgBuf;
 }
