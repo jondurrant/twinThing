@@ -63,6 +63,7 @@ Twin::~Twin() {
 */
 void Twin::processJson(char *str){
 	json_t const* json = json_create( str, jsonBuf, jsonBufLen );
+	statMsg();
 	if ( !json ) {
 		errorNotify("ERROR json create.","Twin::processJson");
 		statError();
@@ -79,13 +80,11 @@ void Twin::processJson(char *str){
 		state->updateFromJson(delta);
 		state->commitTransaction();
 		touch();
-		statOK();
 	} else {
 		delta = json_getProperty(json, TWINTOPIC);
 		if (delta){
 			handleMsg(json);
 			touch();
-			statOK();
 		} else {
 			errorNotify("ERROR state/delta/topic not in JSON.", "Twin::processJson");
 			statError();
@@ -281,9 +280,9 @@ void Twin::statError(){
 }
 
 /***
- * Add statistic for good protocol msg
+ * Add statistic for protocol msg received
  */
-void Twin::statOK(){
+void Twin::statMsg(){
 	unsigned int min = to_ms_since_boot(get_absolute_time ()) / 60000;
 	if (min != statTimeMin){
 		statTimeMin = min;

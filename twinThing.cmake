@@ -10,6 +10,8 @@ target_sources(twinThing INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/src/Twin.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/TwinAbstract.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/TwinStdio.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/TwinUart.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/src/TopicStats.cpp
 )
 
 # Add include directory

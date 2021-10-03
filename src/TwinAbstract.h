@@ -106,6 +106,16 @@ public:
 	  */
 	  virtual char * getStats() = 0;
 
+	 /***
+	  * Add statistic for protocol error
+	  */
+	  virtual void statError() = 0;
+
+	 /***
+	  * Add statistic for msg received
+	  */
+	 virtual void statMsg() = 0;
+
 
 };
 

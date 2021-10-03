@@ -146,6 +146,16 @@ public:
 	  */
 	  char * getStats();
 
+	/***
+	* Add statistic for protocol error
+	*/
+	void statError();
+
+	/***
+	* Add statistic for msg received
+	*/
+	void statMsg();
+
 protected:
 
 	/***
@@ -159,15 +169,7 @@ protected:
 	 */
 	void touch();
 
-	/***
-	 * Add statistic for protocol error
-	 */
-	void statError();
 
-	/***
-	 * Add statistic for good protocol msg
-	 */
-	void statOK();
 
 	unsigned int statTimeMin = 0;
 	unsigned int statIndex = 0;
