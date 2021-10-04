@@ -8,11 +8,17 @@ import twinProtocol
 from topic import Topic
 from twinObserver import TwinObserver
 
+import threading
+import time
+
+
 #Twin handler superclass to matching state to twin
-class Twin:
-    
+class Twin(threading.Thread):
+
     #Constructor
     def __init__(self):
+        threading.Thread.__init__(self)
+        self.lock = threading.Lock()
         self.reported : TwinState =TwinState()
         self.desired : TwinState =TwinState()
         self.declined : TwinState = TwinState()
@@ -47,10 +53,11 @@ class Twin:
     
     #Set the desired state of the object, will trigger a transaction to the twin
     def setDesiredState(self, state : dict):
-        self.desired.setState(state)
-        self.desired.updateState({
-            twinProtocol.TWINTRN:  self.nextTrn()
-        })
+        with self.lock:
+            self.desired.setState(state)
+            self.desired.updateState({
+                twinProtocol.TWINTRN:  self.nextTrn()
+            })
         delta = { 
             twinProtocol.TWINSTATE : self.getDelta()
         }
@@ -67,10 +74,11 @@ class Twin:
     #Update desired state, without overwriting any other requests
     #Will trigger a transaction to the Twin
     def updateDesiredState(self, state : dict):
-        self.desired.updateState(state)
-        self.desired.updateState({
-            twinProtocol.TWINTRN:  self.nextTrn()
-        })
+        with self.lock:
+            self.desired.updateState(state)
+            self.desired.updateState({
+                twinProtocol.TWINTRN:  self.nextTrn()
+            })
         delta = { 
             twinProtocol.TWINDELTA: self.getDelta()
         }
@@ -84,7 +92,8 @@ class Twin:
         
     #delete the desired state
     def deleteDesiredState(self):
-        self.desired.deleteState()
+        with self.lock:
+            self.desired.deleteState()
         
     #delete the desired state
     def deleteState(self):
@@ -116,24 +125,27 @@ class Twin:
     
     #Local function called to update the reported state based on data from thing
     def updateFromThing(self, delta : dict):
-        self.reported.updateState(delta)
-        if (("trn" in delta.keys()) and ("trn" in self.desired.getState().keys())):
-            if (delta["trn"] == self.desired.getState()["trn"]):
-                declined = self.getDelta()
-                self.declined.updateState(declined)
-                self.desired.setState({})
-        self.reported.touch()
+        with self.lock:
+            self.reported.updateState(delta)
+            if (("trn" in delta.keys()) and ("trn" in self.desired.getState().keys())):
+                if (delta["trn"] == self.desired.getState()["trn"]):
+                    declined = self.getDelta()
+                    self.declined.updateState(declined)
+                    self.desired.setState({})
+            self.reported.touch()
         self.notify()
         
     #local function to reset the state to value from twin
     def stateFromThing(self, state: dict):
-        self.reported.setState(state)
-        if (("trn" in state.keys()) and ("trn" in self.desired.getState().keys())):
-            if (state["trn"] == self.desired.getState()["trn"]):
-                declined = self.getDelta()
-                self.declined.updateState(declined)
-                self.desired.setState({})
-        self.reported.touch()
+        with self.lock:
+            self.reported.setState(state)
+            if (("trn" in state.keys()) and ("trn" in self.desired.getState().keys())):
+                if (state["trn"] == self.desired.getState()["trn"]):
+                    declined = self.getDelta()
+                    self.declined.updateState(declined)
+                    self.desired.setState({})
+            self.reported.touch()
+        self.notify()
         
        
     #Publish a message to the twin
@@ -248,4 +260,12 @@ class Twin:
         if (trn > 0xFFFFFFFFFFFFFFFF):
             trn = 1
         return trn
+    
+    #===========================================================================
+    # Launch as threaded process
+    #===========================================================================
+    def run(self):
+        while True:
+            self.readLine()
+            time.sleep(0.005)
             
