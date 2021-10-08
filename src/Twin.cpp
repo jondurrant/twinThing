@@ -114,15 +114,14 @@ void Twin::notifyState(unsigned char dirtyCode){
  */
 void Twin::publishMsg(const char * topic, const char * msg){
 	char *p = writeBuf;
+	size_t len = writeBufLen;
 
-	p = json_objOpen( p, NULL );
-	//p = json_objOpen( p, "event" );
-	p = json_nstr(p, TWINTOPIC, topic, writeBufLen - (p - writeBuf));
-	p = json_nstr(p, TWINDATA, msg, writeBufLen - (p - writeBuf));
+	p = json_objOpen( p, NULL, &len );
+	p = json_nstr(p, TWINTOPIC, topic, writeBufLen - (p - writeBuf), &len);
+	p = json_nstr(p, TWINDATA, msg, writeBufLen - (p - writeBuf), &len);
 
-	p = json_objClose( p );
-	//p = json_objClose( p );
-	p = json_end( p );
+	p = json_objClose( p, &len );
+	p = json_end( p, &len );
 	if (p - writeBuf > writeBufLen){
 		return;
 	}
@@ -136,12 +135,13 @@ void Twin::publishMsg(const char * topic, const char * msg){
 */
 void Twin::errorNotify(const char*  msg, const char*  data){
 	char *p = msgBuf;
+	size_t len = msgBufLen;
 
-	p = json_objOpen( p, NULL );
-	p = json_nstr(p, TOPICERROR, msg, msgBufLen - (p - writeBuf));
-	p = json_nstr(p, TWINDATA, data, msgBufLen - (p - writeBuf));
-	p = json_objClose( p );
-	p = json_end( p );
+	p = json_objOpen( p, NULL, &len );
+	p = json_nstr(p, TOPICERROR, msg, msgBufLen - (p - writeBuf), &len);
+	p = json_nstr(p, TWINDATA, data, msgBufLen - (p - writeBuf), &len);
+	p = json_objClose( p, &len );
+	p = json_end( p, &len );
 	if (p - msgBuf > msgBufLen){
 		return;
 	}
@@ -303,24 +303,26 @@ void Twin::statMsg(){
 char * Twin::getStats(){
 	int i;
 	char *p = msgBuf;
+	size_t len  = msgBufLen;
 
-	p = json_objOpen( p, NULL );
-	p = json_arrOpen( p, "error");
+
+	p = json_objOpen( p, NULL, &len );
+	p = json_arrOpen( p, "error", &len);
 	for (i = statIndex; i >= 0 ; i--){
-		p = json_uint( p, NULL, statErrorsPerMin[i] );
+		p = json_uint( p, NULL, statErrorsPerMin[i], &len );
 	}
 	for (i = STATLEN-1; i > statIndex; i--){
-		p = json_uint( p, NULL, statErrorsPerMin[i] );
+		p = json_uint( p, NULL, statErrorsPerMin[i], &len );
 	}
-	p = json_arrClose( p);
-	p = json_arrOpen( p, "msg");
+	p = json_arrClose( p, &len);
+	p = json_arrOpen( p, "msg", &len);
 	for (i = statIndex; i >= 0 ; i--){
-		p = json_uint( p, NULL, statMSGPerMin[i] );
+		p = json_uint( p, NULL, statMSGPerMin[i], &len );
 	}
 	for (i = STATLEN-1; i > statIndex; i--){
-		p = json_uint( p, NULL, statMSGPerMin[i] );
+		p = json_uint( p, NULL, statMSGPerMin[i], &len );
 	}
-	p = json_arrClose( p);
-	p = json_objClose( p );
+	p = json_arrClose( p, &len);
+	p = json_objClose( p, &len );
 	return msgBuf;
 }

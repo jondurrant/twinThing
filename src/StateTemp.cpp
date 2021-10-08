@@ -93,7 +93,7 @@ uint32_t StateTemp::getBootTime(){
  */
 char* StateTemp::jsonTemp(char *buf, unsigned int len){
 	char *p = buf;
-    p = json_double( p, STATETEMPERATURE, (double)getTemp());
+    p = json_double( p, STATETEMPERATURE, (double)getTemp(), &len);
     return p;
 }
 
@@ -105,7 +105,7 @@ char* StateTemp::jsonTemp(char *buf, unsigned int len){
  */
 char* StateTemp::jsonBoot(char *buf, unsigned int len){
 	char *p = buf;
-	p = json_int( p, STATEBOOT, getBootTime());
+	p = json_int( p, STATEBOOT, getBootTime(), &len);
 	return p;
 }
 

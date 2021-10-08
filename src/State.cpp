@@ -68,8 +68,8 @@ unsigned int State::delta(char *buf, unsigned int len, unsigned char dirtyCode){
 		return 0; // It will never fit
 	}
 
-	p = json_objOpen( p, NULL );
-	p = json_objOpen( p, TWINDELTA );
+	p = json_objOpen( p, NULL, &len );
+	p = json_objOpen( p, TWINDELTA, &len );
 
 	unsigned char m = 0;
 
@@ -84,9 +84,9 @@ unsigned int State::delta(char *buf, unsigned int len, unsigned char dirtyCode){
 			}
 		}
 	}
-	p = json_objClose( p );
-	p = json_objClose( p );
-	p = json_end( p );
+	p = json_objClose( p, &len );
+	p = json_objClose( p, &len);
+	p = json_end( p, &len );
 	if (p - buf > len){
 		return 0;
 	}
@@ -105,8 +105,8 @@ unsigned int State::state(char *buf, unsigned int len) {
 	if (len < 10){
 		return 0; //It will never fit
 	}
-	p = json_objOpen( p, NULL );
-	p = json_objOpen( p, TWINSTATE );
+	p = json_objOpen( p, NULL, &len );
+	p = json_objOpen( p, TWINSTATE, &len );
 
 	for (unsigned char i = 0 ; i < elements; i++){
 		if (jsonHelpers[i] != NULL) {
@@ -116,9 +116,9 @@ unsigned int State::state(char *buf, unsigned int len) {
 			return 0;
 		}
 	}
-	p = json_objClose( p );
-	p = json_objClose( p );
-	p = json_end( p );
+	p = json_objClose( p, &len );
+	p = json_objClose( p, &len );
+	p = json_end( p, &len );
 	if (p - buf > len){
 		return 0;
 	}
@@ -245,6 +245,6 @@ unsigned int State::getTransaction(){
  */
 char* State::jsonTRN(char *buf, unsigned int len){
 	char *p = buf;
-	p = json_uint( p, STATETRN, getTransaction());
+	p = json_uint( p, STATETRN, getTransaction(), &len);
 	return p;
 }
