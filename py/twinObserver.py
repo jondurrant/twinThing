@@ -7,4 +7,16 @@
 #===============================================================================
 class TwinObserver:
     def notify(self, twin):
-        raise Exception("Abstraction function - twinObserver.notify")
+        return 
+    
+    def twinOffline(self, twin):
+         return
+     
+    def twinOnline(self, twin):
+        return 
+    
+    def twinQuite(self, twin):
+        return
+    
+    def twinChatting(self, twin):
+        return

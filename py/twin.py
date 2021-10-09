@@ -25,6 +25,7 @@ class Twin(threading.Thread):
         self.topics : dict = {}
         self.observers = []
         self.twinTouched : int = self.reported.timestamp()
+        self.quite = False
         
     #get reported state of the twin
     def getReportedState(self) -> dict:
@@ -218,6 +219,11 @@ class Twin(threading.Thread):
    #====================================================================
     def touch(self):
         self.twinTouched = self.reported.timestamp()
+        if (self.quiet):
+            self.quite = False
+            for obs in self.observers:
+                obs.twinChatting(self)
+            
         
     #===========================================================================
     # How long since the last conversation with the twin
