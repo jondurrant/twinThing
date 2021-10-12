@@ -15,8 +15,10 @@ class TwinObserver:
     def twinOnline(self, twin):
         return 
     
-    def twinQuite(self, twin):
+    #Called if twin is quiet for more than the quietTimeoutMs
+    def twinQuiet(self, twin):
         return
     
+    #Called folloing a twinQuiet alarm when the twin recovers and first talks
     def twinChatting(self, twin):
         return

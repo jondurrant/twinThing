@@ -7,26 +7,69 @@ import json
 import twinProtocol
 from topic import Topic
 from twinObserver import TwinObserver
+from dotmap import DotMap
 
 import threading
 import time
+import logging
+
 
 
 #Twin handler superclass to matching state to twin
 class Twin(threading.Thread):
 
     #Constructor
-    def __init__(self):
+    def __init__(self, options: dict = {}):
         threading.Thread.__init__(self)
+        self.logging = logging.getLogger(__name__)
         self.lock = threading.Lock()
         self.reported : TwinState =TwinState()
         self.desired : TwinState =TwinState()
         self.declined : TwinState = TwinState()
         self.topics : dict = {}
         self.observers = []
+        self.options = DotMap()
         self.twinTouched : int = self.reported.timestamp()
-        self.quite = False
+        self.connected = False
+        self.setOptions(options)
+        self.quietTimeout = DotMap({
+            'timer': None,
+            'alarm': False
+            })
         
+    #Set options
+    def setOptions(self, options: dict):
+        self.options.quietTimeoutMs = options.get('quietTimeoutMs', -1)
+        if (self.options.quietTimeoutMs > 0):
+            if (self.quietTimeout.timer):
+                self.quietTimeout.timer.cancel()
+            self.quietCheck()
+        return
+    
+    #Internal function to check for quite client and raise alarm
+    def quietCheck(self):
+        self.logging.debug("Quiet Check %d"%self.options.quietTimeoutMs)
+        if (self.timeSinceConversation() > self.options.quietTimeoutMs):
+            if (not self.quietTimeout.alarm):
+                self.quietTimeout.alarm = True
+                for obs in self.observers:
+                    obs.twinQuiet(self)
+        else:
+            if (self.quietTimeout.alarm):
+                self.quietTimeout.alarm = False
+                for obs in self.observers:
+                    obs.twinChatting(self)
+        if (self.options.quietTimeoutMs > 0):
+            #Check 10 times in the timeout period
+            t = self.options.quietTimeoutMs/1000.0/10.0
+            self.quietTimeout.timer = threading.Timer(t, self.quietCheck)
+            self.quietTimeout.timer.start()
+            self.logging.debug("Time set for %f"%(t))
+        
+    # Terturns true if quiet alarm has activiated
+    def getQuietAlarm(self) -> bool:
+        return self.quietTimeout.alarm
+    
     #get reported state of the twin
     def getReportedState(self) -> dict:
         return self.reported.getState();
@@ -206,10 +249,13 @@ class Twin(threading.Thread):
                         
         if twinProtocol.TWINDELTA in js.keys():
             self.updateFromThing(js["delta"])
+            self.touch()
         elif twinProtocol.TWINSTATE in js.keys():
             self.stateFromThing(js["state"])
+            self.touch()
         elif twinProtocol.TWINTOPIC in js.keys():
             self.handleMsg(js)
+            self.touch()
         else:
             print("Unknown data %s"%s)
 
@@ -219,10 +265,6 @@ class Twin(threading.Thread):
    #====================================================================
     def touch(self):
         self.twinTouched = self.reported.timestamp()
-        if (self.quiet):
-            self.quite = False
-            for obs in self.observers:
-                obs.twinChatting(self)
             
         
     #===========================================================================
@@ -230,7 +272,7 @@ class Twin(threading.Thread):
     # return time in miliseconds
     #===========================================================================
     def timeSinceConversation(self) -> int:
-        return (self.reported.timestamp() - self.twinTouched)   
+        return (self.reported.timestamp() - self.twinTouched)/1000000   
         
     #=======================================================================
     # attach a change listener
@@ -274,4 +316,26 @@ class Twin(threading.Thread):
         while True:
             self.readLine()
             time.sleep(0.005)
+            
+    #===========================================================================
+    # Connect to twin - use with child to manage connections
+    #===========================================================================
+    def connect(self):
+        self.connected = True
+        for obs in self.observers:
+            obs.twinOnline(self)
+        
+    #===========================================================================
+    # Disconenct from twin - use on child to manage connections
+    #===========================================================================
+    def disconnect(self):
+        self.connected = False
+        for obs in self.observers:
+            obs.twinOffline(self)
+        
+    #===========================================================================
+    # Check if twin is connected to it's physical counterpart
+    #===========================================================================
+    def isConnected(self):
+        return self.connected
             
