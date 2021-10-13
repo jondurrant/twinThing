@@ -48,7 +48,6 @@ class Twin(threading.Thread):
     
     #Internal function to check for quite client and raise alarm
     def quietCheck(self):
-        self.logging.debug("Quiet Check %d"%self.options.quietTimeoutMs)
         if (self.timeSinceConversation() > self.options.quietTimeoutMs):
             if (not self.quietTimeout.alarm):
                 self.quietTimeout.alarm = True
@@ -64,7 +63,6 @@ class Twin(threading.Thread):
             t = self.options.quietTimeoutMs/1000.0/10.0
             self.quietTimeout.timer = threading.Timer(t, self.quietCheck)
             self.quietTimeout.timer.start()
-            self.logging.debug("Time set for %f"%(t))
         
     # Terturns true if quiet alarm has activiated
     def getQuietAlarm(self) -> bool:
@@ -338,4 +336,25 @@ class Twin(threading.Thread):
     #===========================================================================
     def isConnected(self):
         return self.connected
+    
+    
+    #===========================================================================
+    # Request full state be sent from thing
+    #===========================================================================
+    def requestGet(self):
+        self.publishMsg(twinProtocol.TOPICGET, "")
+        
+    #=======================================================================
+    # Send delta to thing
+    #=======================================================================
+    def sendDelta(self):
+        delta = { 
+            twinProtocol.TWINDELTA : self.getDelta()
+        }
+        self.outputJson(delta)
+        
+        
+        
+        
+        
             

@@ -65,7 +65,7 @@ void Twin::processJson(char *str){
 	json_t const* json = json_create( str, jsonBuf, jsonBufLen );
 	statMsg();
 	if ( !json ) {
-		errorNotify("ERROR json create.","Twin::processJson");
+		errorNotify("ERROR Twin::processJson json create.",str);
 		statError();
 		return;
 	}
@@ -86,7 +86,7 @@ void Twin::processJson(char *str){
 			handleMsg(json);
 			touch();
 		} else {
-			errorNotify("ERROR state/delta/topic not in JSON.", "Twin::processJson");
+			errorNotify("ERROR Twin::processJson state/delta/topic not in JSON.", str);
 			statError();
 		}
 	}
