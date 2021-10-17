@@ -1,6 +1,6 @@
 import unittest
 
-from twin import Twin
+from twinFake import TwinFake
 import json
 import copy
 
@@ -45,27 +45,31 @@ class MyTest(unittest.TestCase):
         
         
     def testSetState(self):
-        twin = Twin()
+        twin = TwinFake()
         twin.setState(jon)
-        self.assertEqual(twin.getDesiredState(), jon)       
+        self.assertEqual(twin.getDesiredState()["name"], jon["name"]) 
+        self.assertEqual(twin.getDesiredState()["age"], jon["age"])       
         self.assertEqual(twin.getDesiredMeta()["age"], twin.getDesiredMeta()["name"])
         
     def testUpdateState(self):
-        twin = Twin()
+        twin = TwinFake()
         twin.setState(jon)
-        self.assertEqual(twin.getDesiredState(), jon)   
+        self.assertEqual(twin.getDesiredState()["name"], jon["name"]) 
+        self.assertEqual(twin.getDesiredState()["age"], jon["age"])
         twin.updateState(ageUpdate)
-        self.assertNotEqual(twin.getDesiredState(), jon)
+        self.assertEqual(twin.getDesiredState()["name"], jon["name"]) 
         self.assertEqual(twin.getDesiredState()["age"], 50)
         self.assertGreater(twin.getDesiredMeta()["age"], twin.getDesiredMeta()["name"])
         
         
     def testDeltaForTwin(self):
-        twin = Twin()
+        twin = TwinFake()
         twin.setState(jon)
-        self.assertEqual(twin.getDesiredState(), jon)
+        self.assertEqual(twin.getDesiredState()["name"], jon["name"]) 
+        self.assertEqual(twin.getDesiredState()["age"], jon["age"])
         self.assertEqual(twin.isUptoDate(), False)
-        self.assertEqual(twin.getDelta(), jon)
+        self.assertEqual(twin.getDelta()["name"], jon["name"]) 
+        self.assertEqual(twin.getDelta()["age"], jon["age"])
         #Force reported update and check delta
         twin.reported.updateState(twin.getDelta())
         self.assertEqual(twin.isUptoDate(), True)
@@ -73,11 +77,15 @@ class MyTest(unittest.TestCase):
         
     def testCompound(self):
         #Setup and check twin
-        twin = Twin()
+        twin = TwinFake()
         twin.setState(compound)
-        self.assertEqual(twin.getDesiredState(), compound)
+        self.assertEqual(twin.getDesiredState()["name"], compound["name"]) 
+        self.assertEqual(twin.getDesiredState()["age"], compound["age"])
+        self.assertEqual(twin.getDesiredState()["kin"], compound["kin"])
         self.assertEqual(twin.isUptoDate(), False)
-        self.assertEqual(twin.getDelta(), compound)
+        self.assertEqual(twin.getDelta()["name"], compound["name"]) 
+        self.assertEqual(twin.getDelta()["age"], compound["age"])
+        self.assertEqual(twin.getDelta()["kin"], compound["kin"])
         #Force reported update and check delta
         twin.reported.updateState(twin.getDelta())
         self.assertEqual(twin.isUptoDate(), True)
@@ -86,7 +94,7 @@ class MyTest(unittest.TestCase):
         #Trigger Update
         twin.updateState(ageUpdate)
         self.assertEqual(twin.isUptoDate(), False)
-        self.assertEqual(twin.getDelta(), ageUpdate)
+        self.assertEqual(twin.getDelta()["age"], ageUpdate["age"])
         
         #Force reported update and check delta
         twin.reported.updateState(twin.getDelta())
@@ -97,15 +105,19 @@ class MyTest(unittest.TestCase):
         #Trigger Update
         twin.updateState(compoundUpdate)
         self.assertEqual(twin.isUptoDate(), False)       
-        self.assertEqual(twin.getDelta(), compoundUpdate)
+        self.assertEqual(twin.getDelta()["kin"]["age"], compoundUpdate["kin"]["age"])
         
     def testAddition(self):
         #Setup and check twin
-        twin = Twin()
+        twin = TwinFake()
         twin.setState(compound)
-        self.assertEqual(twin.getDesiredState(), compound)
+        self.assertEqual(twin.getDesiredState()["name"], compound["name"]) 
+        self.assertEqual(twin.getDesiredState()["age"], compound["age"])
+        self.assertEqual(twin.getDesiredState()["kin"], compound["kin"])
         self.assertEqual(twin.isUptoDate(), False)
-        self.assertEqual(twin.getDelta(), compound)
+        self.assertEqual(twin.getDelta()["name"], compound["name"]) 
+        self.assertEqual(twin.getDelta()["age"], compound["age"])
+        self.assertEqual(twin.getDelta()["kin"], compound["kin"])
         
         #Force reported update and check delta
         twin.reported.updateState(twin.getDelta())
@@ -115,7 +127,7 @@ class MyTest(unittest.TestCase):
         #Trigger Update
         twin.updateState(addition)
         self.assertEqual(twin.isUptoDate(), False)
-        self.assertEqual(twin.getDelta(), addition)
+        self.assertEqual(twin.getDelta()["uk"], addition["uk"])
         
         #Force reported update and check delta
         twin.reported.updateState(twin.getDelta())
@@ -125,38 +137,67 @@ class MyTest(unittest.TestCase):
          #Trigger Update
         twin.updateState(compoundAddition)
         self.assertEqual(twin.isUptoDate(), False)
-        self.assertEqual(twin.getDelta(), compoundAddition)
+        self.assertEqual(twin.getDelta()["address"], compoundAddition["address"])
         
         
     def testFakedThing(self):
          #Setup and check twin
-        twin = Twin()
+        twin = TwinFake()
         #print("Desired %d Reported %d"%(twin.getDesiredMeta()["timestamp"], 
         #                                twin.getReportedMeta()["timestamp"]))
         twin.stateFromThing(compound)
         #print("Desired %d Reported %d"%(twin.getDesiredMeta()["timestamp"], 
         #                                twin.getReportedMeta()["timestamp"]))
+        
         self.assertEqual(twin.isUptoDate(), True)
-        self.assertEqual(twin.getState(), compound)  
+        self.assertEqual(twin.getState()["name"], compound["name"])  
+        self.assertEqual(twin.getState()["age"], compound["age"])  
+        self.assertEqual(twin.getState()["kin"], compound["kin"])  
         
         #Update
         twin.updateState(compoundUpdate)  
         self.assertEqual(twin.isUptoDate(), False)
-        self.assertEqual(twin.getDelta(), compoundUpdate)
-        
-        #Add TRN to allow decline to work
-        trn=481
-        trnUpdate = {"trn": trn}
-        twin.updateState(trnUpdate)
-        
+        self.assertEqual(twin.getDelta()["age"], compoundUpdate["age"])
+        self.assertEqual(twin.getDelta()["kin"]["age"], compoundUpdate["kin"]["age"])
+                
         #Thing Update  
-        ageTrnUpdate = copy.deepcopy(ageUpdate)
-        ageTrnUpdate["trn"]=trn
-        twin.updateFromThing(ageTrnUpdate)
+        self.assertEqual(twin.getDelta()["age"], 50)
+        st = copy.deepcopy(twin.getDelta())
+        st["age"]=35
+        self.assertEqual(st["age"], 35)
+
+        twin.updateFromThing(st)
+
+        
         self.assertEqual(twin.isUptoDate(), True)
         self.assertEqual(twin.getDelta(), {})
-        print(json.dumps(twin.getDeclinedState()))
+        self.assertEqual(twin.getState()["age"], 35)
+        self.assertEqual(twin.getDeclinedState()["age"], 50)
+        self.assertNotEqual(twin.getDeclinedState(), {})
+        
+        
+    def testStateFromThingDoesNotChangeFutureDesire(self):
+         #Setup and check twin
+        twin = TwinFake()
+        twin.setState(compound)
+        self.assertEqual(twin.isUptoDate(), False)
+        
+        #Grab state so we can fake thing state after update
+        orgState = copy.deepcopy(twin.getDelta())
+        #Update twin
+        twin.updateState(compoundUpdate)
+        self.assertEqual(twin.isUptoDate(), False)
+        
+        #state from thing
+        twin.stateFromThing(orgState)
+
+        self.assertEqual(twin.isUptoDate(), False)
         self.assertNotEqual(twin.getDeclinedState, {})
+        self.assertNotEqual(twin.getDelta(), {})
+        
+        
+        
+        
         
         
         

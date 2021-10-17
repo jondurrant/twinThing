@@ -45,7 +45,7 @@ public:
 	 * Read from source with a timeout in miliseconds
 	 * @param miliseconds
 	 */
-	void readTimeout(unsigned int miliseconds);
+	virtual void readTimeout(unsigned int miliseconds);
 
 	/***
 	 * get the Uart that is being used
@@ -65,9 +65,8 @@ protected:
 	 * Write string to stdout
 	 * @param buf
 	 */
-	void outputJson(const char * buf);
+	virtual void outputJson(const char * buf);
 
-private:
 	//Uart being used
 	uart_inst_t *uart = uart0;
 

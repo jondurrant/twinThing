@@ -24,7 +24,9 @@ class Twin(threading.Thread):
         self.logging = logging.getLogger(__name__)
         self.lock = threading.Lock()
         self.reported : TwinState =TwinState()
+        self.reported.setState({"trn": 0})
         self.desired : TwinState =TwinState()
+        self.desired.setState({"trn": 0})
         self.declined : TwinState = TwinState()
         self.topics : dict = {}
         self.observers = []
@@ -143,37 +145,53 @@ class Twin(threading.Thread):
         
     #true of the twin is upto date, false if we have a delta    
     def isUptoDate(self) -> bool:
-        return (self.getDesiredMeta()["timestamp"] <= self.getReportedMeta()["timestamp"])
+        #return (self.getDesiredMeta()["timestamp"] <= self.getReportedMeta()["timestamp"])
+        return (self.getReportedState().get(twinProtocol.TWINTRN, -1) == self.getDesiredState().get(twinProtocol.TWINTRN, -1))
     
     #return a delta transaction for the target
     def getDelta(self) -> dict:
-        return self.getDeltaHelper(self.getDesiredMeta(), self.getReportedMeta(), self.getDesiredState())
+        return self.getDeltaHelper(self.getDesiredMeta(), self.getReportedMeta(), self.getDesiredState(), self.getReportedState())
         
     #Local helper function to recursively work through for delta    
-    def getDeltaHelper(self, desiredMeta : dict, reportedMeta : dict, desiredState: dict) -> dict:
+    def getDeltaHelper(self, desiredMeta : dict, reportedMeta : dict, desiredState: dict, reportedState : dict) -> dict:
         delta = {}
         for key in desiredMeta:
-            if not key in reportedMeta.keys():
-                delta[key] = desiredState[key]
-            elif isinstance(desiredMeta[key], dict):
-                if key in desiredState.keys():
-                    d = self.getDeltaHelper(desiredMeta[key], reportedMeta[key], desiredState[key])
-                    if (d != {}):
-                        delta[key] = d
-            elif (desiredMeta[key] >= reportedMeta[key]):
-                if (key != "timestamp"):
+            if not key == 'timestamp':
+                if not key in reportedMeta.keys():
                     delta[key] = desiredState[key]
+                elif not key in reportedState.keys():
+                    delta[key] = desiredState[key]
+                elif isinstance(desiredMeta[key], dict):
+                    if key in desiredState.keys():
+                        d = self.getDeltaHelper(desiredMeta[key], reportedMeta[key], desiredState[key], reportedState[key])
+                        if (d != {}):
+                            delta[key] = d
+                        
+                elif (key in desiredState.keys()):
+                    if (reportedState[key] != desiredState[key]):
+                        delta[key] = desiredState[key]
         return delta
     
     #Local function called to update the reported state based on data from thing
     def updateFromThing(self, delta : dict):
         with self.lock:
             self.reported.updateState(delta)
-            if (("trn" in delta.keys()) and ("trn" in self.desired.getState().keys())):
-                if (delta["trn"] == self.desired.getState()["trn"]):
+            
+            if (not twinProtocol.TWINTRN in delta.keys()):
+                d = {}
+                if (len(self.getDelta().keys()) <= 1):
+                    d[twinProtocol.TWINTRN] = self.desired.getState()[twinProtocol.TWINTRN]
+                else:
+                    d[twinProtocol.TWINTRN] = self.desired.getState()[twinProtocol.TWINTRN] - 1      
+                self.reported.updateState(d)
+                
+            if ((twinProtocol.TWINTRN in delta.keys()) and (twinProtocol.TWINTRN in self.desired.getState().keys())):
+                if (delta[twinProtocol.TWINTRN] == self.desired.getState()[twinProtocol.TWINTRN]):
                     declined = self.getDelta()
                     self.declined.updateState(declined)
-                    self.desired.setState({})
+                    d = {}
+                    d[twinProtocol.TWINTRN] = self.getReportedState()[twinProtocol.TWINTRN]
+                    self.desired.setState(d)
             self.reported.touch()
         self.notify()
         
@@ -181,8 +199,17 @@ class Twin(threading.Thread):
     def stateFromThing(self, state: dict):
         with self.lock:
             self.reported.setState(state)
-            if (("trn" in state.keys()) and ("trn" in self.desired.getState().keys())):
-                if (state["trn"] == self.desired.getState()["trn"]):
+            
+            if (not twinProtocol.TWINTRN in state.keys()):
+                d = {}
+                if (len(self.getDelta().keys()) <= 1):
+                    d[twinProtocol.TWINTRN] = self.desired.getState()[twinProtocol.TWINTRN]
+                else:
+                    d[twinProtocol.TWINTRN] = self.desired.getState()[twinProtocol.TWINTRN] - 1      
+                self.reported.updateState(d)
+                
+            if ((twinProtocol.TWINTRN in state.keys()) and (twinProtocol.TWINTRN in self.desired.getState().keys())):
+                if (state[twinProtocol.TWINTRN] >= self.desired.getState()[twinProtocol.TWINTRN]):
                     declined = self.getDelta()
                     self.declined.updateState(declined)
                     self.desired.setState({})
