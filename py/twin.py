@@ -175,6 +175,8 @@ class Twin(threading.Thread):
     #Local function called to update the reported state based on data from thing
     def updateFromThing(self, delta : dict):
         with self.lock:
+            if (not twinProtocol.TWINTRN in delta ):
+                delta[twinProtocol.TWINTRN] = self.getReportedState()[twinProtocol.TWINTRN]+1
             self.reported.updateState(delta)
             
             if (not twinProtocol.TWINTRN in delta.keys()):
