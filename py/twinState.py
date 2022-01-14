@@ -101,12 +101,21 @@ class TwinState:
         return time.time_ns()
     
     
+    #===========================================================================
+    # Attache an observer to be notified of changes
+    #===========================================================================
     def attachObserver(self, obs: TwinObserver):
         self.observers.append(obs)
         
+    #===========================================================================
+    # Detach observer
+    #===========================================================================
     def dettachObserver(self, obs: TwinObserver):
         self.observers.remove(obs)
         
+    #===========================================================================
+    # Notify all observers of a change
+    #===========================================================================
     def notifyObservers(self):
         for obs in self.observers:
             obs.notify()
