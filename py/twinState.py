@@ -4,6 +4,7 @@
 
 import copy
 import time
+from twinObserver import TwinObserver
 
 #===============================================================================
 # Twin State to represent either the desired or reported state of the twin
@@ -15,6 +16,7 @@ class TwinState:
     #===========================================================================
     def __init__(self):
         self.deleteState()
+        self.observers = []
         
     #===========================================================================
     # set the state
@@ -60,6 +62,7 @@ class TwinState:
     def updateState(self, state: dict):
         self.updateStateHelper(state, self.state, self.meta)
         self.meta["timestamp"] = self.timestamp()
+        self.notifyObservers()
             
     #===========================================================================
     # local helper recursive function to update stae and metadata
@@ -96,4 +99,15 @@ class TwinState:
     #===========================================================================
     def timestamp(self):
         return time.time_ns()
+    
+    
+    def attachObserver(self, obs: TwinObserver):
+        self.observers.append(obs)
+        
+    def dettachObserver(self, obs: TwinObserver):
+        self.observers.remove(obs)
+        
+    def notifyObservers(self):
+        for obs in self.observers:
+            obs.notify()
         
